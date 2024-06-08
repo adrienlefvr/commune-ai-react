@@ -11,8 +11,15 @@ import {
     doc
 } from 'firebase/firestore';
 import { auth, db } from "../firebase-config";
-import { callOpenAIAPI } from './openAiRequest';
+//import { callOpenAIAPI } from './openAiRequest';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+
 import '../App.css'; // Import the CSS file
+
+
+import { functions } from '../firebase-config'; // Adjust the path as necessary
+const callOpenAIAPI = httpsCallable(functions, 'callOpenAIAPI');
+
 
 function Room() {
     const { setAppState, room } = useContext(AppContext);
