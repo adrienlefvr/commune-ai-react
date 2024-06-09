@@ -10,15 +10,20 @@ import {
     updateDoc,
     doc
 } from 'firebase/firestore';
-import { auth, db } from "../firebase-config";
+import { functions, auth, db } from "../firebase-config";
 //import { callOpenAIAPI } from './openAiRequest';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-
+import { httpsCallable } from 'firebase/functions';
 import '../App.css'; // Import the CSS file
 
-
-import { functions } from '../firebase-config'; // Adjust the path as necessary
 const callOpenAIAPI = httpsCallable(functions, 'callOpenAIAPI');
+
+callOpenAIAPI({ topic: "Example Topic", message: "Example Message" })
+  .then((result) => {
+    console.log(result.data); // Handle the results here
+  })
+  .catch((error) => {
+    console.error("Error:", error); // Handle errors here
+  });
 
 
 function Room() {
@@ -54,7 +59,7 @@ function Room() {
         try {
             const response = await callOpenAIAPI(roomData.topic, newScenario);
             setApiResponse(response);
-            console.log(response);
+            console.log("this is the api repsonse: " + response.data);
 
             const existingMsgQuery = query(ScenariosRef, where("user", "==", auth.currentUser.uid), where("room", "==", room));
             const querySnapshot = await getDocs(existingMsgQuery);
@@ -64,7 +69,7 @@ function Room() {
                 await updateDoc(scenarioDocRef, {
                     scenario: newScenario,
                     createdAt: serverTimestamp(),
-                    valueEmbed: response
+                    valueEmbed: response.data
                 });
                 
             } else {
@@ -72,7 +77,7 @@ function Room() {
                     scenario: newScenario,
                     createdAt: serverTimestamp(),
                     user: auth.currentUser.uid,
-                    valueEmbed: response,
+                    valueEmbed: response.data,
                     room
                 });
             }

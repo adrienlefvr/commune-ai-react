@@ -18,9 +18,11 @@ import {
     onSnapshot, 
     orderBy
 } from 'firebase/firestore';
-import { auth, db } from "../firebase-config";
-import { callOpenAIAPI } from './openAiRequest';
-    
+import { functions, auth, db } from "../firebase-config";
+import { httpsCallable } from 'firebase/functions';
+
+const callOpenAIAPI = httpsCallable(functions, 'callOpenAIAPI');
+
 ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
 function SharedRoom() {
@@ -73,22 +75,26 @@ function SharedRoom() {
             snapshot.forEach(doc => {
                 const data = doc.data();
                 fetchedComments.push(data);
-                
-                // Increment values count if the current user hasn't expressed this value
-                if (data.valueEmbed && !userValues.has(data.valueEmbed)) {
-                    const values = JSON.parse(data.valueEmbed.replace(/'/g, '"'));
-                    values.forEach(value => {
-                        if (valuesCount[value]) {
-                            valuesCount[value]++;
-                        } else {
-                            valuesCount[value] = 1;
-                        }
-                    });
-                    
-                    // Add value to the Set of user values
-                    userValues.add(data.valueEmbed);
+            
+                if (data.valueEmbed) {
+                    // Ensure that valueEmbed is a string and handle it safely
+                    const valueEmbed = String(data.valueEmbed); // Convert to string to ensure compatibility
+                    console.log(valueEmbed);
+                    try {
+                        const values = JSON.parse(valueEmbed.replace(/'/g, '"')); // Safely attempt to replace and parse
+                        values.forEach(value => {
+                            if (valuesCount[value]) {
+                                valuesCount[value]++;
+                            } else {
+                                valuesCount[value] = 1;
+                            }
+                        });
+                        userValues.add(valueEmbed); // Store the original string
+                    } catch (parseError) {
+                        console.error("Failed to parse valueEmbed:", parseError);
+                    }
                 }
-                
+            
                 // Add user ID to the Set of unique user IDs
                 userSet.add(data.user);
             });
@@ -221,7 +227,7 @@ function SharedRoom() {
                     comment: newComment,
                     createdAt: serverTimestamp(),
                     user: auth.currentUser.uid,
-                    valueEmbed: response,
+                    valueEmbed: response.data,
                     room,
                     scenarioId // Add scenarioId as a property
                 });
@@ -230,7 +236,7 @@ function SharedRoom() {
                     comment: newComment,
                     createdAt: serverTimestamp(),
                     user: auth.currentUser.uid,
-                    valueEmbed: response,
+                    valueEmbed: response.data,
                     room,
                     scenarioId // Add scenarioId as a property
                 });

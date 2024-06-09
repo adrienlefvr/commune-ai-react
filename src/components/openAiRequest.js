@@ -17,4 +17,3 @@ export async function callOpenAIAPI(topic, message) {
     
     return chatCompletion.choices[0].message.content;
 }
-
