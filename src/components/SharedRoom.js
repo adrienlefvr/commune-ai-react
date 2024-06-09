@@ -77,11 +77,10 @@ function SharedRoom() {
                 fetchedComments.push(data);
             
                 if (data.valueEmbed) {
-                    // Ensure that valueEmbed is a string and handle it safely
-                    const valueEmbed = String(data.valueEmbed); // Convert to string to ensure compatibility
-                    console.log(valueEmbed);
+                    
+                    console.log(data.valueEmbed);
                     try {
-                        const values = JSON.parse(valueEmbed.replace(/'/g, '"')); // Safely attempt to replace and parse
+                        const values = JSON.parse(data.valueEmbed.replace(/'/g, '"')); // Safely attempt to replace and parse
                         values.forEach(value => {
                             if (valuesCount[value]) {
                                 valuesCount[value]++;
@@ -89,7 +88,7 @@ function SharedRoom() {
                                 valuesCount[value] = 1;
                             }
                         });
-                        userValues.add(valueEmbed); // Store the original string
+                        userValues.add(data.valueEmbed); // Store the original string
                     } catch (parseError) {
                         console.error("Failed to parse valueEmbed:", parseError);
                     }
@@ -220,7 +219,7 @@ function SharedRoom() {
     
             // Fetch the ID of the current scenario displayed
             const scenarioId = scenarios[currentScenarioIndex]; // Assuming scenario text is unique
-            console.log("Current Scenario ID:", scenarioId);fire
+            console.log("Current Scenario ID:", scenarioId);
     
             if (!querySnapshot.empty) {
                 await addDoc(CommentsRef, {
