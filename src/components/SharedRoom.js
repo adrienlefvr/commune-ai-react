@@ -220,14 +220,14 @@ function SharedRoom() {
     
             // Fetch the ID of the current scenario displayed
             const scenarioId = scenarios[currentScenarioIndex]; // Assuming scenario text is unique
-            console.log("Current Scenario ID:", scenarioId);
+            console.log("Current Scenario ID:", scenarioId);fire
     
             if (!querySnapshot.empty) {
                 await addDoc(CommentsRef, {
                     comment: newComment,
                     createdAt: serverTimestamp(),
                     user: auth.currentUser.uid,
-                    valueEmbed: response.data,
+                    valueEmbed: response.data.result,
                     room,
                     scenarioId // Add scenarioId as a property
                 });
@@ -236,7 +236,7 @@ function SharedRoom() {
                     comment: newComment,
                     createdAt: serverTimestamp(),
                     user: auth.currentUser.uid,
-                    valueEmbed: response.data,
+                    valueEmbed: response.data.result,
                     room,
                     scenarioId // Add scenarioId as a property
                 });

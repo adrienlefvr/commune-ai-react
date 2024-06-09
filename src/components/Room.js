@@ -69,7 +69,7 @@ function Room() {
                 await updateDoc(scenarioDocRef, {
                     scenario: newScenario,
                     createdAt: serverTimestamp(),
-                    valueEmbed: response.data
+                    valueEmbed: response.data.result
                 });
                 
             } else {
@@ -77,7 +77,7 @@ function Room() {
                     scenario: newScenario,
                     createdAt: serverTimestamp(),
                     user: auth.currentUser.uid,
-                    valueEmbed: response.data,
+                    valueEmbed: response.data.result,
                     room
                 });
             }
