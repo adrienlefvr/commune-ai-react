@@ -68,47 +68,47 @@ function SharedRoom() {
     
         const unsubscribe = onSnapshot(commentsQuery, (snapshot) => {
             let valuesCount = {};
-            let userValues = new Set(); // Use a Set to store unique user values
-            let userSet = new Set(); // Use a Set to store unique user IDs
+            let userContributions = {}; // Dictionary to track each user's contributed values
             let fetchedComments = [];
             
             snapshot.forEach(doc => {
                 const data = doc.data();
                 fetchedComments.push(data);
-            
-                if (data.valueEmbed) {
-                    
-                    console.log(data.valueEmbed);
+                const userId = data.user; // Assuming there's a 'user' field with user ID
+                
+                // Initialize user's contributions if not already done
+                if (!userContributions[userId]) {
+                    userContributions[userId] = new Set();
+                }
+    
+                if (data.valueEmbed && data.scenarioId === scenarios[currentScenarioIndex].id) {
                     try {
-                        const values = JSON.parse(data.valueEmbed.replace(/'/g, '"')); // Safely attempt to replace and parse
+                        const values = JSON.parse(data.valueEmbed.replace(/'/g, '"'));
                         values.forEach(value => {
-                            if (valuesCount[value]) {
-                                valuesCount[value]++;
-                            } else {
-                                valuesCount[value] = 1;
+                            // Check if this user has already contributed this value
+                            if (!userContributions[userId].has(value)) {
+                                valuesCount[value] = (valuesCount[value] || 0) + 1;
+                                userContributions[userId].add(value); // Mark this value as contributed by this user
                             }
                         });
-                        userValues.add(data.valueEmbed); // Store the original string
                     } catch (parseError) {
                         console.error("Failed to parse valueEmbed:", parseError);
                     }
                 }
-            
-                // Add user ID to the Set of unique user IDs
-                userSet.add(data.user);
             });
     
             // Calculate the total number of unique users
-            const totalUsersCount = userSet.size;
+            const totalUsersCount = Object.keys(userContributions).length;
             setComments(fetchedComments);
             setGroupValues(valuesCount);
-            console.log(valuesCount);
-            setTotalUsers(totalUsersCount); // Set the total users count
-            console.log("number of users: " + totalUsersCount);
+            console.log("Group values: ", valuesCount);
+            setTotalUsers(totalUsersCount);
+            console.log("Current users: ", totalUsersCount);
         });
         
         return () => unsubscribe();
-    }, [room]);
+    }, [room, currentScenarioIndex, scenarios]);
+    
     
 
     
@@ -120,7 +120,10 @@ function SharedRoom() {
         );
 
         const unsubscribe = onSnapshot(scenariosQuery, (snapshot) => {
-            const fetchedScenarios = snapshot.docs.map(doc => doc.data().scenario);
+            const fetchedScenarios = snapshot.docs.map(doc => ({
+                id: doc.id,
+                content: doc.data().scenario
+            }));
             setScenarios(fetchedScenarios);
         });
 
@@ -149,7 +152,7 @@ function SharedRoom() {
         return (
             <div className="scenario-card">
                 <div className="mini-label">SCENARIO</div>
-                <p>{scenarios[currentScenarioIndex]}</p>
+                <p>{scenarios[currentScenarioIndex].content}</p>
                 <div className="navigation-buttons">
                     <button onClick={handlePreviousScenario}>Previous</button>
                     <span>{currentScenarioIndex + 1} / {scenarios.length}</span>
@@ -208,18 +211,21 @@ function SharedRoom() {
         e.preventDefault();
         setIsSubmitting(true); // Start submitting
         const CommentsRef = collection(db, "comments");
-    
+        const groupValuesList = Object.keys(groupValues).join(", ");
+        const prompt = "Research topic: " + roomData.topic + "\nIdentify underlying human values that motivate this stakeholder's testimony: " + newComment + "\nSelect a minimum of 0 and up to 5, depending on how many ideas are expressed in the statement. Present the result as a JavaScript array compatible for parsing, using this example format: ['caring', 'honest', 'resilient', 'self-maintaining', 'self-assured']. If any values identified are have semantic similarity with any value in the following list, then change the wording to match it. List: " + groupValuesList;
+        console.log(prompt);
+
         try {
-            const response = await callOpenAIAPI(roomData.topic, newComment);
+            const response = await callOpenAIAPI(prompt);
             setApiResponse(response);
-            console.log(response);
+            console.log("Your values are: "+ response.data.result);
     
             const existingMsgQuery = query(CommentsRef, where("user", "==", auth.currentUser.uid), where("room", "==", room));
             const querySnapshot = await getDocs(existingMsgQuery);
     
             // Fetch the ID of the current scenario displayed
-            const scenarioId = scenarios[currentScenarioIndex]; // Assuming scenario text is unique
-            console.log("Current Scenario ID:", scenarioId);
+            const scenarioId = scenarios[currentScenarioIndex].id; // Assuming scenario text is unique
+            //console.log("Current Scenario ID:", scenarioId);
     
             if (!querySnapshot.empty) {
                 await addDoc(CommentsRef, {
@@ -266,7 +272,7 @@ function SharedRoom() {
     };
 
     const renderNumberOfComments = () => {
-        const commentsWithCurrentScenarioId = comments.filter(comment => comment.scenarioId === scenarios[currentScenarioIndex]);
+        const commentsWithCurrentScenarioId = comments.filter(comment => comment.scenarioId === scenarios[currentScenarioIndex].id);
         return <div className="mini-label">{commentsWithCurrentScenarioId.length} comments</div>;
     };
 
@@ -281,7 +287,7 @@ function SharedRoom() {
                     columnClassName="my-masonry-grid_column"
                 >
                     {comments
-                        .filter(comment => comment.scenarioId === scenarios[currentScenarioIndex])
+                        .filter(comment => comment.scenarioId === scenarios[currentScenarioIndex].id)
                         .map((comment, index) => (
                     <div key={index}>
                 {comment.comment}

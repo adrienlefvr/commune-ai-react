@@ -57,9 +57,9 @@ function Room() {
         const ScenariosRef = collection(db, "scenarios");
     
         try {
-            const response = await callOpenAIAPI(roomData.topic, newScenario);
-            setApiResponse(response);
-            console.log("this is the api repsonse: " + response.data);
+            //const response = await callOpenAIAPI(roomData.topic, newScenario);
+            //setApiResponse(response);
+            //console.log("this is the api repsonse: " + response.data);
 
             const existingMsgQuery = query(ScenariosRef, where("user", "==", auth.currentUser.uid), where("room", "==", room));
             const querySnapshot = await getDocs(existingMsgQuery);
@@ -69,7 +69,7 @@ function Room() {
                 await updateDoc(scenarioDocRef, {
                     scenario: newScenario,
                     createdAt: serverTimestamp(),
-                    valueEmbed: response.data.result
+                    //valueEmbed: response.data.result
                 });
                 
             } else {
@@ -77,7 +77,7 @@ function Room() {
                     scenario: newScenario,
                     createdAt: serverTimestamp(),
                     user: auth.currentUser.uid,
-                    valueEmbed: response.data.result,
+                    //valueEmbed: response.data.result,
                     room
                 });
             }
