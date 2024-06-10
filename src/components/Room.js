@@ -15,15 +15,7 @@ import { functions, auth, db } from "../firebase-config";
 import { httpsCallable } from 'firebase/functions';
 import '../App.css'; // Import the CSS file
 
-const callOpenAIAPI = httpsCallable(functions, 'callOpenAIAPI');
 
-callOpenAIAPI({ topic: "Example Topic", message: "Example Message" })
-  .then((result) => {
-    console.log(result.data); // Handle the results here
-  })
-  .catch((error) => {
-    console.error("Error:", error); // Handle errors here
-  });
 
 
 function Room() {

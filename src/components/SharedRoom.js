@@ -63,51 +63,50 @@ function SharedRoom() {
         const commentsQuery = query(
             collection(db, "comments"),
             where("room", "==", room),
-            orderBy("createdAt", "desc") // Change order to descending
+            orderBy("createdAt", "desc")
         );
     
         const unsubscribe = onSnapshot(commentsQuery, (snapshot) => {
             let valuesCount = {};
-            let userContributions = {}; // Dictionary to track each user's contributed values
+            let userContributions = {};
             let fetchedComments = [];
             
             snapshot.forEach(doc => {
                 const data = doc.data();
                 fetchedComments.push(data);
-                const userId = data.user; // Assuming there's a 'user' field with user ID
+                const userId = data.user;
                 
-                // Initialize user's contributions if not already done
                 if (!userContributions[userId]) {
                     userContributions[userId] = new Set();
                 }
     
-                if (data.valueEmbed && data.scenarioId === scenarios[currentScenarioIndex].id) {
+                if (data.valueEmbed && scenarios.length > currentScenarioIndex && data.scenarioId === scenarios[currentScenarioIndex].id) {
                     try {
                         const values = JSON.parse(data.valueEmbed.replace(/'/g, '"'));
                         values.forEach(value => {
-                            // Check if this user has already contributed this value
                             if (!userContributions[userId].has(value)) {
                                 valuesCount[value] = (valuesCount[value] || 0) + 1;
-                                userContributions[userId].add(value); // Mark this value as contributed by this user
+                                userContributions[userId].add(value);
                             }
                         });
                     } catch (parseError) {
-                        console.error("Failed to parse valueEmbed:", parseError);
-                    }
+                    console.error("Failed to parse valueEmbed:", parseError);
                 }
-            });
-    
-            // Calculate the total number of unique users
-            const totalUsersCount = Object.keys(userContributions).length;
-            setComments(fetchedComments);
-            setGroupValues(valuesCount);
-            console.log("Group values: ", valuesCount);
-            setTotalUsers(totalUsersCount);
-            console.log("Current users: ", totalUsersCount);
+            }
         });
-        
+    
+        // Calculate the total number of unique users
+        const totalUsersCount = Object.keys(userContributions).length;
+        setComments(fetchedComments);
+        setGroupValues(valuesCount);
+        console.log("Group values: ", valuesCount);
+        setTotalUsers(totalUsersCount);
+        console.log("Current users: ", totalUsersCount);
+        });
+    
         return () => unsubscribe();
-    }, [room, currentScenarioIndex, scenarios]);
+    }, [room, currentScenarioIndex, scenarios]);  // Ensure scenarios is listed in the dependencies
+    
     
     
 
@@ -212,11 +211,12 @@ function SharedRoom() {
         setIsSubmitting(true); // Start submitting
         const CommentsRef = collection(db, "comments");
         const groupValuesList = Object.keys(groupValues).join(", ");
-        const prompt = "Research topic: " + roomData.topic + "\nIdentify underlying human values that motivate this stakeholder's testimony: " + newComment + "\nSelect a minimum of 0 and up to 5, depending on how many ideas are expressed in the statement. Present the result as a JavaScript array compatible for parsing, using this example format: ['caring', 'honest', 'resilient', 'self-maintaining', 'self-assured']. If any values identified are have semantic similarity with any value in the following list, then change the wording to match it. List: " + groupValuesList;
+        console.log(groupValuesList);
+        const prompt = "Research topic: " + roomData.topic + "\nIdentify underlying human values that motivate this stakeholder's testimony: " + newComment + "\nSelect a minimum of 0 and up to 5, depending on how many ideas are expressed in the statement. Present the result as a JavaScript array compatible for parsing, using this example format: ['caring', 'honest', 'resilient', 'self-maintaining', 'self-assured']. If any values identified are have semantic similarity with any value in the following list, then change the wording to match it. List: "+ groupValuesList;
         console.log(prompt);
 
         try {
-            const response = await callOpenAIAPI(prompt);
+            const response = await callOpenAIAPI({prompt});
             setApiResponse(response);
             console.log("Your values are: "+ response.data.result);
     
